@@ -1,0 +1,103 @@
+{
+  "uid": "slotcar-pipeline",
+  "title": "Slotcar — CDC Pipeline",
+  "tags": ["slotcar", "cdc"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "5s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "WAL lag (bytes)",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "thresholds": { "mode": "absolute", "steps": [
+        { "color": "green", "value": null }, { "color": "red", "value": 104857600 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "expr": "slotcar_wal_lag_bytes", "refId": "A" }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Slot active",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "expr": "slotcar_slot_active", "refId": "A" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Retained WAL (bytes)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "thresholds": { "mode": "absolute", "steps": [
+        { "color": "green", "value": null }, { "color": "orange", "value": 524288000 }] } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "expr": "slotcar_wal_retained_bytes", "refId": "A" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Reconnects (1h)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{ "expr": "increase(slotcar_reconnects_total[1h])", "refId": "A" }]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Events in / s by op",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "legend": { "displayMode": "list" }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "sum by (op) (rate(slotcar_events_received_total[1m]))", "legendFormat": "{{op}}", "refId": "A" }]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Sink rows flushed / s",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "legend": { "displayMode": "list" }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "rate(slotcar_rows_flushed_total[1m])", "legendFormat": "flushed", "refId": "A" }]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Flush duration (p50 / p95)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(slotcar_flush_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "A" },
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(slotcar_flush_duration_seconds_bucket[5m])))", "legendFormat": "p50", "refId": "B" }
+      ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "End-to-end flush lag (s)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list" }, "tooltip": { "mode": "multi" } },
+      "targets": [{ "expr": "slotcar_flush_lag_seconds", "legendFormat": "lag", "refId": "A" }]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Errors / s",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "legend": { "displayMode": "list" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(slotcar_decode_errors_total[5m])", "legendFormat": "decode", "refId": "A" },
+        { "expr": "rate(slotcar_flush_failures_total[5m])", "legendFormat": "flush", "refId": "B" },
+        { "expr": "rate(slotcar_missing_replica_identity_total[5m])", "legendFormat": "no-replica-identity", "refId": "C" }
+      ]
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "TOAST cache hits vs misses / s",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "legend": { "displayMode": "list" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "expr": "rate(slotcar_toast_cache_hits_total[1m])", "legendFormat": "hits", "refId": "A" },
+        { "expr": "rate(slotcar_toast_cache_misses_total[1m])", "legendFormat": "misses", "refId": "B" }
+      ]
+    }
+  ]
+}

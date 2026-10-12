@@ -1,0 +1,6 @@
+global:
+  scrape_interval: 5s
+scrape_configs:
+  - job_name: slotcar
+    static_configs:
+      - targets: ["host.docker.internal:9090"]  # slotcar runs on the host
